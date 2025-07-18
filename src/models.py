@@ -3,7 +3,7 @@
 import uuid
 import logging
 import yaml
-from collections import deque
+import heapq # <-- Import heapq for our priority queue
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -23,31 +23,28 @@ class Node:
     def __init__(self, name):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.neighbors = []
-        self.is_active = True # --- NEW ATTRIBUTE ---
+        # --- MODIFIED: Neighbors is now a dictionary storing latency ---
+        self.neighbors = {} # {neighbor_node: latency}
+        self.is_active = True
         logging.info(f"Node '{self.name}' created with ID {self.id}")
 
-    # --- NEW METHODS ---
     def take_offline(self):
-        """Sets the node's status to inactive."""
         self.is_active = False
         logging.warning(f"Node '{self.name}' has been taken OFFLINE.")
 
     def bring_online(self):
-        """Sets the node's status to active."""
         self.is_active = True
         logging.info(f"Node '{self.name}' has been brought ONLINE.")
 
-    # ... (add_neighbor and receive_message are unchanged) ...
-    def add_neighbor(self, neighbor_node):
-        """Establishes a bilateral connection to another node."""
+    # --- MODIFIED: add_neighbor now accepts a latency value ---
+    def add_neighbor(self, neighbor_node, latency):
+        """Establishes a bilateral connection to another node with a given latency."""
         if neighbor_node not in self.neighbors:
-            self.neighbors.append(neighbor_node)
-            neighbor_node.neighbors.append(self) # Make the connection two-way
-            logging.info(f"Node '{self.name}' is now connected to '{neighbor_node.name}'")
+            self.neighbors[neighbor_node] = latency
+            neighbor_node.neighbors[self] = latency # Make the connection two-way
+            logging.info(f"Node '{self.name}' connected to '{neighbor_node.name}' with latency {latency}ms")
 
     def receive_message(self, message):
-        """Handles an incoming message for this node."""
         if message.destination_id == self.id:
             logging.info(f"Node '{self.name}' ({self.id}) received final message: '{message.payload}'")
             return True
@@ -55,9 +52,8 @@ class Node:
             logging.warning(f"Node '{self.name}' received message intended for {message.destination_id}. Discarding.")
             return False
 
-
 class Network:
-    # ... (init, add_node, get_node_by_name, get_node, send_direct_message, create_from_config are unchanged) ...
+    # ... (init, add_node, get_node_by_name, get_node, send_direct_message are unchanged) ...
     def __init__(self):
         self.nodes = {} # A dictionary to store nodes by their ID for quick lookup
 
@@ -97,14 +93,11 @@ class Network:
             logging.warning(f"Failed to send: '{destination_node.name}' is not a direct neighbor of '{source_node.name}'.")
             return False
 
+    # --- MODIFIED: create_from_config now parses latency ---
     @classmethod
     def create_from_config(cls, config_path):
-        """
-        Factory method to create and configure a Network instance from a YAML file.
-        """
         network = cls()
         name_to_node_map = {}
-
         with open(config_path, 'r') as f:
             config = yaml.safe_load(f)
 
@@ -118,52 +111,92 @@ class Network:
 
         logging.info("Creating links between nodes...")
         for link_data in config.get('links', []):
-            node1_name, node2_name = link_data
+            # Unpack three values now, including latency
+            node1_name, node2_name, latency = link_data
             node1 = name_to_node_map.get(node1_name)
             node2 = name_to_node_map.get(node2_name)
 
             if node1 and node2:
-                node1.add_neighbor(node2)
+                node1.add_neighbor(node2, int(latency))
             else:
                 logging.error(f"Could not create link: Node not found for '{node1_name}' or '{node2_name}'")
-        
         return network
 
-    # --- MODIFIED METHOD ---
+    # --- REPLACED: find_shortest_path now uses Dijkstra's Algorithm ---
     def find_shortest_path(self, start_node_id, end_node_id):
-        """
-        Finds the shortest path between two nodes using Breadth-First Search (BFS),
-        avoiding any nodes that are not active.
-        """
         start_node = self.get_node(start_node_id)
         end_node = self.get_node(end_node_id)
 
-        if not start_node or not end_node:
-            logging.error("Pathfinding error: Start or end node not in network.")
-            return None
+        if not start_node or not end_node or not start_node.is_active or not end_node.is_active:
+            logging.error("Pathfinding error: Start/end node not found or is offline.")
+            return None, float('inf')
+
+        # {node_id: total_latency_from_start}
+        distances = {node_id: float('inf') for node_id in self.nodes}
+        distances[start_node_id] = 0
         
-        # --- CRITICAL CHANGE: Check if start or end nodes are offline ---
-        if not start_node.is_active or not end_node.is_active:
-            logging.warning("Pathfinding error: Start or end node is offline.")
-            return None
-
-        queue = deque([[start_node]])
-        visited = {start_node.id}
-
-        while queue:
-            path = queue.popleft()
-            node = path[-1]
-
-            if node == end_node:
-                return path
-
-            for neighbor in node.neighbors:
-                # --- CRITICAL CHANGE: Only consider active neighbors ---
-                if neighbor.id not in visited and neighbor.is_active:
-                    visited.add(neighbor.id)
-                    new_path = list(path)
-                    new_path.append(neighbor)
-                    queue.append(new_path)
+        # {node_id: previous_node_in_path}
+        previous_nodes = {node_id: None for node_id in self.nodes}
         
-        logging.warning(f"No path found between '{start_node.name}' and '{end_node.name}'")
-        return None
+        # Priority queue: (latency, node_id)
+        pq = [(0, start_node_id)]
+
+        while pq:
+            current_latency, current_node_id = heapq.heappop(pq)
+
+            # If we've found a shorter path already, skip
+            if current_latency > distances[current_node_id]:
+                continue
+
+            current_node = self.get_node(current_node_id)
+            if not current_node.is_active:
+                continue
+            
+            # If we've reached the end, we can stop
+            if current_node_id == end_node_id:
+                break
+
+            for neighbor, latency in current_node.neighbors.items():
+                if not neighbor.is_active:
+                    continue
+                
+                distance = current_latency + latency
+                if distance < distances[neighbor.id]:
+                    distances[neighbor.id] = distance
+                    previous_nodes[neighbor.id] = current_node
+                    heapq.heappush(pq, (distance, neighbor.id))
+        
+        # Reconstruct the path
+        path = []
+        current_node = end_node
+        while current_node is not None:
+            path.insert(0, current_node)
+            current_node = previous_nodes[current_node.id]
+
+        if path[0] == start_node:
+            total_latency = distances[end_node_id]
+            return path, total_latency
+        else:
+            logging.warning(f"No path found between '{start_node.name}' and '{end_node.name}'")
+            return None, float('inf')
+
+    # --- MODIFIED: route_message now uses the new pathfinder output ---
+    def route_message(self, message):
+        logging.info(f"--- Initiating routing for message {message.id} ---")
+        path, total_latency = self.find_shortest_path(message.source_id, message.destination_id)
+
+        if not path:
+            logging.error(f"Routing failed: No path available for message {message.id}.")
+            return False
+
+        path_names = ' -> '.join([node.name for node in path])
+        logging.info(f"Path found (Total Latency: {total_latency}ms): {path_names}. Transmitting...")
+
+        for i in range(1, len(path)):
+            current_node = path[i-1]
+            next_node = path[i]
+            logging.info(f"Message {message.id} at '{current_node.name}', forwarding to '{next_node.name}'...")
+
+        destination_node = path[-1]
+        logging.info(f"Message {message.id} arriving at final destination '{destination_node.name}'.")
+        return destination_node.receive_message(message)

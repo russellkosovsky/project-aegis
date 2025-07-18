@@ -1,4 +1,4 @@
-# A simple network topology for Project Aegis
+# A simple network topology for Project Aegis with latency values
 
 nodes:
   - name: Ground Station Alpha
@@ -8,11 +8,14 @@ nodes:
   - name: Backup Center
 
 links:
-  # Connections from the Command Center
-  - [Command Center, Ground Station Alpha]
-  - [Command Center, Mobile Unit 7]
-  - [Command Center, Satellite Relay]
+  # [node1, node2, latency_in_ms]
+  # Fast, direct links
+  - [Command Center, Mobile Unit 7, 20]
+  - [Satellite Relay, Backup Center, 40]
+  
+  # Slower, terrestrial links
+  - [Command Center, Ground Station Alpha, 50]
+  - [Ground Station Alpha, Backup Center, 60]
 
-  # Redundant link
-  - [Ground Station Alpha, Backup Center]
-  - [Satellite Relay, Backup Center]
+  # High-latency satellite link
+  - [Command Center, Satellite Relay, 150]
