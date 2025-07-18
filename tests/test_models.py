@@ -123,3 +123,56 @@ def test_create_network_from_config():
     assert node_b in node_a.neighbors
     assert node_a in node_b.neighbors
     assert len(node_c.neighbors) == 0
+
+# --- NEW TEST for AEGIS-4 ---
+def test_find_shortest_path_success():
+    """Tests that the BFS algorithm finds the correct shortest path."""
+    # Build a simple network for testing
+    # A -> B -> C
+    # A -> D
+    network = Network()
+    node_a = Node("A")
+    node_b = Node("B")
+    node_c = Node("C")
+    node_d = Node("D")
+    
+    network.add_node(node_a)
+    network.add_node(node_b)
+    network.add_node(node_c)
+    network.add_node(node_d)
+    
+    node_a.add_neighbor(node_b)
+    node_b.add_neighbor(node_c)
+    node_a.add_neighbor(node_d)
+    
+    # Path from A to C should be [A, B, C]
+    path = network.find_shortest_path(node_a.id, node_c.id)
+    
+    assert path is not None
+    assert len(path) == 3
+    assert path[0].name == "A"
+    assert path[1].name == "B"
+    assert path[2].name == "C"
+
+def test_find_shortest_path_no_path():
+    """Tests that the algorithm returns None when no path exists."""
+    # Build a disjointed network
+    # A -> B   C -> D
+    network = Network()
+    node_a = Node("A")
+    node_b = Node("B")
+    node_c = Node("C")
+    node_d = Node("D")
+
+    network.add_node(node_a)
+    network.add_node(node_b)
+    network.add_node(node_c)
+    network.add_node(node_d)
+
+    node_a.add_neighbor(node_b)
+    node_c.add_neighbor(node_d)
+
+    # There should be no path from A to D
+    path = network.find_shortest_path(node_a.id, node_d.id)
+    
+    assert path is None
