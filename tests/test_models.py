@@ -176,3 +176,68 @@ def test_find_shortest_path_no_path():
     path = network.find_shortest_path(node_a.id, node_d.id)
     
     assert path is None
+
+# --- NEW TESTS for AEGIS-5 ---
+
+def test_node_can_be_taken_offline_and_online():
+    """Tests that a node's active status can be toggled."""
+    node = Node("Test Node")
+    assert node.is_active is True
+    
+    node.take_offline()
+    assert node.is_active is False
+    
+    node.bring_online()
+    assert node.is_active is True
+
+def test_pathfinder_avoids_offline_nodes():
+    """Tests that the pathfinder finds an alternate route around an offline node."""
+    # Build a network with a redundant path
+    # A -> B -> C
+    # |---------|  (A is also connected to C)
+    network = Network()
+    node_a = Node("A")
+    node_b = Node("B")
+    node_c = Node("C")
+    
+    network.add_node(node_a)
+    network.add_node(node_b)
+    network.add_node(node_c)
+    
+    node_a.add_neighbor(node_b)
+    node_b.add_neighbor(node_c)
+    node_a.add_neighbor(node_c) # The alternate, shorter path
+    
+    # Take the direct path node (B) offline
+    node_b.take_offline()
+    
+    # Path from A to C should now be [A, C], not [A, B, C]
+    path = network.find_shortest_path(node_a.id, node_c.id)
+    
+    assert path is not None
+    assert len(path) == 2
+    assert path[0].name == "A"
+    assert path[1].name == "C"
+
+def test_pathfinder_fails_if_no_alternate_path():
+    """Tests that the pathfinder returns None if an offline node breaks the only path."""
+    # A -> B -> C
+    network = Network()
+    node_a = Node("A")
+    node_b = Node("B")
+    node_c = Node("C")
+
+    network.add_node(node_a)
+    network.add_node(node_b)
+    network.add_node(node_c)
+
+    node_a.add_neighbor(node_b)
+    node_b.add_neighbor(node_c)
+
+    # Take the critical node B offline
+    node_b.take_offline()
+
+    # There should be no path from A to C now
+    path = network.find_shortest_path(node_a.id, node_c.id)
+    
+    assert path is None

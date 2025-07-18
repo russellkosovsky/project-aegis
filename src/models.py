@@ -3,11 +3,11 @@
 import uuid
 import logging
 import yaml
-from collections import deque # <-- Import deque for an efficient queue
+from collections import deque
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# ... (Message and Node classes remain the same) ...
+# ... (Message class is unchanged) ...
 class Message:
     """Represents a data packet moving through the network."""
     def __init__(self, source_id, destination_id, payload):
@@ -17,14 +17,28 @@ class Message:
         self.payload = payload
         logging.info(f"Message {self.id} created from {source_id} to {destination_id}")
 
+
 class Node:
     """Represents a single communications node in the network."""
     def __init__(self, name):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.neighbors = [] # A list of other Node objects it's connected to
+        self.neighbors = []
+        self.is_active = True # --- NEW ATTRIBUTE ---
         logging.info(f"Node '{self.name}' created with ID {self.id}")
 
+    # --- NEW METHODS ---
+    def take_offline(self):
+        """Sets the node's status to inactive."""
+        self.is_active = False
+        logging.warning(f"Node '{self.name}' has been taken OFFLINE.")
+
+    def bring_online(self):
+        """Sets the node's status to active."""
+        self.is_active = True
+        logging.info(f"Node '{self.name}' has been brought ONLINE.")
+
+    # ... (add_neighbor and receive_message are unchanged) ...
     def add_neighbor(self, neighbor_node):
         """Establishes a bilateral connection to another node."""
         if neighbor_node not in self.neighbors:
@@ -43,7 +57,7 @@ class Node:
 
 
 class Network:
-    """Manages the collection of all nodes and their connections."""
+    # ... (init, add_node, get_node_by_name, get_node, send_direct_message, create_from_config are unchanged) ...
     def __init__(self):
         self.nodes = {} # A dictionary to store nodes by their ID for quick lookup
 
@@ -115,11 +129,11 @@ class Network:
         
         return network
 
-    # --- NEW METHOD ---
+    # --- MODIFIED METHOD ---
     def find_shortest_path(self, start_node_id, end_node_id):
         """
-        Finds the shortest path between two nodes using Breadth-First Search (BFS).
-        Returns a list of Node objects representing the path, or None if no path exists.
+        Finds the shortest path between two nodes using Breadth-First Search (BFS),
+        avoiding any nodes that are not active.
         """
         start_node = self.get_node(start_node_id)
         end_node = self.get_node(end_node_id)
@@ -127,31 +141,29 @@ class Network:
         if not start_node or not end_node:
             logging.error("Pathfinding error: Start or end node not in network.")
             return None
+        
+        # --- CRITICAL CHANGE: Check if start or end nodes are offline ---
+        if not start_node.is_active or not end_node.is_active:
+            logging.warning("Pathfinding error: Start or end node is offline.")
+            return None
 
-        # A queue to store the paths to explore. We start with a path containing only the start_node.
         queue = deque([[start_node]])
-        # A set to keep track of visited nodes to prevent cycles and redundant work.
         visited = {start_node.id}
 
         while queue:
-            # Get the first path from the queue
             path = queue.popleft()
-            # Get the last node from the path
             node = path[-1]
 
-            # If we've reached the destination, we've found the shortest path
             if node == end_node:
                 return path
 
-            # Explore the neighbors of the current node
             for neighbor in node.neighbors:
-                if neighbor.id not in visited:
+                # --- CRITICAL CHANGE: Only consider active neighbors ---
+                if neighbor.id not in visited and neighbor.is_active:
                     visited.add(neighbor.id)
-                    # Create a new path by extending the current one and add it to the queue
                     new_path = list(path)
                     new_path.append(neighbor)
                     queue.append(new_path)
         
-        # If the queue is empty and we haven't found a path, none exists
         logging.warning(f"No path found between '{start_node.name}' and '{end_node.name}'")
         return None
