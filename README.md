@@ -35,23 +35,6 @@ This project serves as a practical application of software engineering principle
 * **Project Management:** Atlassian Jira (Agile Kanban/Sprints)
 * **Documentation:** Atlassian Confluence
 
-### Project Structure
-
-The repository is organized to separate application logic from testing and documentation.
-
-project-aegis/
-│
-├── src/                  # Main source code for the application
-│   ├── init.py
-│   └── models.py         # Core classes (Node, Message, Network)
-│
-├── tests/                # Test suite
-│   └── test_models.py    # Tests for the core classes
-│
-├── .gitignore            # Specifies intentionally untracked files
-├── README.md             # This file
-└── requirements.txt      # Project dependencies
-
 ### Getting Started
 
 Follow these instructions to set up the development environment on a local machine.
@@ -87,7 +70,3 @@ To ensure the integrity of the codebase, run the test suite using `pytest`.
 From the root `project-aegis` directory, execute the following command:
 ```bash
 pytest
-
-The test runner will automatically discover and execute all tests located in the tests/ directory.
-
-

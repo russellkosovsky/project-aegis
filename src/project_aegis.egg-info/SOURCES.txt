@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/__init__.py
+src/models.py
+src/project_aegis.egg-info/PKG-INFO
+src/project_aegis.egg-info/SOURCES.txt
+src/project_aegis.egg-info/dependency_links.txt
+src/project_aegis.egg-info/top_level.txt
+tests/test_models.py
