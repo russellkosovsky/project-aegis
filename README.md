@@ -1,93 +1,93 @@
-# russellkosovsky-project
+# Project Aegis: NC3 Network Simulator
+
+## Table of Contents
+1.  [Project Description](#project-description)
+2.  [Core Features](#core-features)
+3.  [Technology Stack](#technology-stack)
+4.  [Project Structure](#project-structure)
+5.  [Getting Started](#getting-started)
+6.  [Running Tests](#running-tests)
+7.  [Development Process](#development-process)
+
+---
+
+### Project Description
+
+Project Aegis is a Python-based simulation tool designed to model a resilient and distributed communications network, mirroring the complex environments relevant to Nuclear Command, Control, and Communications (NC3). The primary purpose of this simulator is to analyze network performance, test routing protocol resilience, and evaluate the system's integrity when subjected to various disruptions, such as node failures or link degradation.
+
+This project serves as a practical application of software engineering principles, including object-oriented design, agile methodologies, and DevSecOps practices.
+
+### Core Features
+
+* **Network Modeling:** Dynamically create network topologies consisting of interconnected nodes (e.g., ground stations, mobile units, satellites).
+* **Object-Oriented Design:** Utilizes a clear, modular structure with classes for `Node`, `Message`, `Network`, and other core components.
+* **Event-Driven Simulation:** The simulator operates on a queue of events, allowing for complex and time-dependent interactions.
+* **Resilience Testing:** Functionality to simulate network disruptions, such as shutting down nodes or severing links, to observe network recovery and message rerouting.
+* **Logging and Analysis:** Comprehensive logging of all simulation events to allow for post-run analysis of message latency, path efficiency, and network stability.
+
+### Technology Stack
+
+* **Backend:** Python 3
+* **Testing:** `pytest` for unit and integration testing
+* **Security:** `bandit` for Static Application Security Testing (SAST)
+* **Version Control:** Git
+* **CI/CD & Hosting:** GitLab
+* **Project Management:** Atlassian Jira (Agile Kanban/Sprints)
+* **Documentation:** Atlassian Confluence
+
+### Project Structure
+
+The repository is organized to separate application logic from testing and documentation.
+
+project-aegis/
+│
+├── src/                  # Main source code for the application
+│   ├── init.py
+│   └── models.py         # Core classes (Node, Message, Network)
+│
+├── tests/                # Test suite
+│   └── test_models.py    # Tests for the core classes
+│
+├── .gitignore            # Specifies intentionally untracked files
+├── README.md             # This file
+└── requirements.txt      # Project dependencies
+
+### Getting Started
+
+Follow these instructions to set up the development environment on a local machine.
+
+1.  **Clone the Repository**
+    ```bash
+    git clone <your-gitlab-repo-url>
+    cd project-aegis
+    ```
+
+2.  **Create and Activate a Python Virtual Environment**
+    This isolates the project's dependencies from the system-wide Python installation.
+    ```bash
+    # For macOS / Linux
+    python3 -m venv venv
+    source venv/bin/activate
+
+    # For Windows
+    python -m venv venv
+    .\venv\Scripts\activate
+    ```
+
+3.  **Install Dependencies**
+    The `requirements.txt` file contains all necessary Python packages.
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Running Tests
+
+To ensure the integrity of the codebase, run the test suite using `pytest`.
+
+From the root `project-aegis` directory, execute the following command:
+```bash
+pytest
+
+The test runner will automatically discover and execute all tests located in the tests/ directory.
 
 
-
-## Getting started
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
-## Add your files
-
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
-
-```
-cd existing_repo
-git remote add origin https://gitlab.com/russellkosovsky-group/russellkosovsky-project.git
-git branch -M main
-git push -uf origin main
-```
-
-## Integrate with your tools
-
-- [ ] [Set up project integrations](https://gitlab.com/russellkosovsky-group/russellkosovsky-project/-/settings/integrations)
-
-## Collaborate with your team
-
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
-
-## Test and Deploy
-
-Use the built-in continuous integration in GitLab.
-
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
-
-***
-
-# Editing this README
-
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
-
-## Suggestions for a good README
-
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
-
-## Name
-Choose a self-explaining name for your project.
-
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
-
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
-
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
