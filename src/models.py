@@ -2,10 +2,9 @@
 
 import uuid
 import logging
+import yaml # <-- Import the new library
 
-# It's good practice to set up a logger for better output.
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
+# ... (Message and Node classes remain the same) ...
 class Message:
     """Represents a data packet moving through the network."""
     def __init__(self, source_id, destination_id, payload):
@@ -39,6 +38,7 @@ class Node:
             logging.warning(f"Node '{self.name}' received message intended for {message.destination_id}. Discarding.")
             return False
 
+
 class Network:
     """Manages the collection of all nodes and their connections."""
     def __init__(self):
@@ -66,10 +66,44 @@ class Network:
             logging.error("Source or Destination node not found in the network.")
             return False
 
-        # Check if the destination is a direct neighbor of the source
         if destination_node in source_node.neighbors:
             logging.info(f"Attempting to send message from '{source_node.name}' to neighbor '{destination_node.name}'...")
             return destination_node.receive_message(message)
         else:
             logging.warning(f"Failed to send: '{destination_node.name}' is not a direct neighbor of '{source_node.name}'.")
             return False
+
+    # --- NEW METHOD ---
+    @classmethod
+    def create_from_config(cls, config_path):
+        """
+        Factory method to create and configure a Network instance from a YAML file.
+        """
+        network = cls()
+        name_to_node_map = {}
+
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+
+        # First pass: create all the nodes
+        logging.info("Creating nodes from config...")
+        for node_data in config.get('nodes', []):
+            node_name = node_data['name']
+            if node_name not in name_to_node_map:
+                node = Node(name=node_name)
+                network.add_node(node)
+                name_to_node_map[node_name] = node
+
+        # Second pass: create all the links
+        logging.info("Creating links between nodes...")
+        for link_data in config.get('links', []):
+            node1_name, node2_name = link_data
+            node1 = name_to_node_map.get(node1_name)
+            node2 = name_to_node_map.get(node2_name)
+
+            if node1 and node2:
+                node1.add_neighbor(node2)
+            else:
+                logging.error(f"Could not create link: Node not found for '{node1_name}' or '{node2_name}'")
+        
+        return network

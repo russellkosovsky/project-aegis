@@ -1,0 +1,18 @@
+# A simple network topology for Project Aegis
+
+nodes:
+  - name: Ground Station Alpha
+  - name: Command Center
+  - name: Mobile Unit 7
+  - name: Satellite Relay
+  - name: Backup Center
+
+links:
+  # Connections from the Command Center
+  - [Command Center, Ground Station Alpha]
+  - [Command Center, Mobile Unit 7]
+  - [Command Center, Satellite Relay]
+
+  # Redundant link
+  - [Ground Station Alpha, Backup Center]
+  - [Satellite Relay, Backup Center]

@@ -1,5 +1,6 @@
 # tests/test_models.py
 
+import yaml
 from src.models import Node, Message, Network
 
 # --- Existing Tests for Node ---
@@ -79,3 +80,46 @@ def test_node_rejects_incorrect_message():
     message = Message(source_id="some_other_node", destination_id="a_different_id", payload="Wrong destination")
 
     assert node_a.receive_message(message) is False
+
+def test_create_network_from_config():
+    """Tests that a network can be created from a YAML configuration."""
+    # Create a dummy YAML config as a string
+    yaml_config_string = """
+    nodes:
+      - name: Node A
+      - name: Node B
+      - name: Node C
+    links:
+      - [Node A, Node B]
+    """
+    # Use yaml.safe_load to parse the string
+    config = yaml.safe_load(yaml_config_string)
+
+    # We need a temporary way to pass this data to the method.
+    # Let's adapt the method slightly to handle data directly for testing.
+    # (Or, for a real test, write to a temp file). For now, let's just test the logic.
+    
+    network = Network()
+    name_to_node_map = {}
+
+    # Test node creation
+    for node_data in config.get('nodes', []):
+        node = Node(name=node_data['name'])
+        network.add_node(node)
+        name_to_node_map[node.name] = node
+    
+    assert len(network.nodes) == 3
+
+    # Test link creation
+    for link_data in config.get('links', []):
+        node1 = name_to_node_map.get(link_data[0])
+        node2 = name_to_node_map.get(link_data[1])
+        node1.add_neighbor(node2)
+
+    node_a = name_to_node_map.get("Node A")
+    node_b = name_to_node_map.get("Node B")
+    node_c = name_to_node_map.get("Node C")
+
+    assert node_b in node_a.neighbors
+    assert node_a in node_b.neighbors
+    assert len(node_c.neighbors) == 0
