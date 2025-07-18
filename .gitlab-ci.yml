@@ -1,0 +1,41 @@
+# .gitlab-ci.yml
+
+# Define the stages of our pipeline. Jobs in 'test' run before jobs in 'security'.
+stages:
+  - test
+  - security
+
+# This is a template for commands that need to run before each job.
+# We use YAML anchors (&) and aliases (*) to avoid repeating code.
+.python-setup: &python-setup
+  # All jobs will run inside a Docker container using this official Python image.
+  image: python:3.11
+  before_script:
+    - echo "Python version:"
+    - python --version
+    - echo "Installing dependencies..."
+    - pip install -r requirements.txt
+    - pip install -e .  # Install our project in editable mode to fix 'src' imports
+
+# --- Define the Jobs ---
+
+# This job runs our unit tests.
+test-job:
+  # Use the setup template defined above.
+  <<: *python-setup
+  # Assign this job to the 'test' stage.
+  stage: test
+  script:
+    - echo "Running unit tests with pytest..."
+    - pytest
+
+# This job runs our Static Application Security Testing (SAST) scan.
+sast-job:
+  # Use the same setup template.
+  <<: *python-setup
+  # Assign this job to the 'security' stage.
+  stage: security
+  script:
+    - echo "Running SAST scan with bandit..."
+    # The '-r' flag means 'recursive'. It will scan all files in the src directory.
+    - bandit -r src/
