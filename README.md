@@ -1,4 +1,4 @@
-# Project Aegis: NC3 Network Simulator
+# Project Aegis: NC3 Network Simulator 
 
 ## Table of Contents
 1.  [Project Description](#project-description)
