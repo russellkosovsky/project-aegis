@@ -7,7 +7,6 @@ import heapq # <-- Import heapq for our priority queue
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# ... (Message class is unchanged) ...
 class Message:
     """Represents a data packet moving through the network."""
     def __init__(self, source_id, destination_id, payload):
@@ -36,7 +35,6 @@ class Node:
         self.is_active = True
         logging.info(f"Node '{self.name}' has been brought ONLINE.")
 
-    # --- MODIFIED: add_neighbor now accepts a latency value ---
     def add_neighbor(self, neighbor_node, latency):
         """Establishes a bilateral connection to another node with a given latency."""
         if neighbor_node not in self.neighbors:
@@ -93,7 +91,6 @@ class Network:
             logging.warning(f"Failed to send: '{destination_node.name}' is not a direct neighbor of '{source_node.name}'.")
             return False
 
-    # --- MODIFIED: create_from_config now parses latency ---
     @classmethod
     def create_from_config(cls, config_path):
         network = cls()

@@ -33,7 +33,6 @@ This project serves as a practical application of software engineering principle
 * **Version Control:** Git
 * **CI/CD & Hosting:** GitLab
 * **Project Management:** Atlassian Jira (Agile Kanban/Sprints)
-* **Documentation:** Atlassian Confluence
 
 ### Getting Started
 
@@ -41,7 +40,7 @@ Follow these instructions to set up the development environment on a local machi
 
 1.  **Clone the Repository**
     ```bash
-    git clone <your-gitlab-repo-url>
+    git clone https://gitlab.com/russellkosovsky-group/russellkosovsky-project.git
     cd project-aegis
     ```
 
