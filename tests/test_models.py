@@ -1,6 +1,7 @@
 # tests/test_models.py
 
 import yaml
+import pytest
 from src.models import Node, Message, Network
 
 # --- Node & Basic Network Tests ---
@@ -20,11 +21,8 @@ def test_add_neighbor_is_bilateral():
     latency = 20
     node1.add_neighbor(node2, latency)
     
-    # Check that node2 is in node1's neighbors and latency is correct
     assert node2 in node1.neighbors
     assert node1.neighbors[node2] == latency
-    
-    # Check that node1 is in node2's neighbors and latency is correct
     assert node1 in node2.neighbors
     assert node2.neighbors[node1] == latency
 
@@ -78,8 +76,7 @@ def test_node_rejects_incorrect_message():
 
 def test_create_network_from_config(tmp_path):
     """
-    Tests that a network can be created from a YAML configuration file.
-    Uses pytest's tmp_path fixture to create a temporary config file.
+    Tests that a network can be created from a YAML configuration dictionary.
     """
     config_content = """
     nodes:
@@ -89,12 +86,11 @@ def test_create_network_from_config(tmp_path):
     links:
       - [Node A, Node B, 25]
     """
-    # Create a temporary file and write the config to it
-    config_file = tmp_path / "test_config.yml"
-    config_file.write_text(config_content)
+    # --- MODIFIED: Load the YAML data into a dictionary first ---
+    config_data = yaml.safe_load(config_content)
 
-    # Create the network from the temporary file
-    network = Network.create_from_config(config_file)
+    # Create the network from the loaded dictionary
+    network = Network.create_from_config(config_data)
 
     assert len(network.nodes) == 3
     node_a = network.get_node_by_name("Node A")
@@ -105,7 +101,6 @@ def test_create_network_from_config(tmp_path):
     assert node_b is not None
     assert node_c is not None
 
-    # Check that the link and latency were created correctly
     assert node_b in node_a.neighbors
     assert node_a.neighbors[node_b] == 25
     assert len(node_c.neighbors) == 0
@@ -143,9 +138,9 @@ def test_pathfinder_avoids_offline_nodes():
     network.add_node(node_b)
     network.add_node(node_c)
 
-    node_a.add_neighbor(node_b, 100) # The path to be taken offline
+    node_a.add_neighbor(node_b, 100)
     node_b.add_neighbor(node_c, 100)
-    node_a.add_neighbor(node_c, 500) # The alternate, slower path
+    node_a.add_neighbor(node_c, 500)
 
     node_b.take_offline()
     
@@ -179,9 +174,6 @@ def test_dijkstra_finds_fastest_path_not_shortest_hops():
     Tests that Dijkstra's algorithm correctly chooses a path with lower total
     latency, even if it has more hops.
     """
-    # A --(30ms)--> B
-    # |             ^
-    # |-(10ms)-> C --(10ms)-|
     network = Network()
     node_a = Node("A")
     node_b = Node("B")
@@ -190,10 +182,7 @@ def test_dijkstra_finds_fastest_path_not_shortest_hops():
     network.add_node(node_b)
     network.add_node(node_c)
 
-    # Direct path A->B is shorter (1 hop) but slower (30ms)
     node_a.add_neighbor(node_b, 30)
-    
-    # Indirect path A->C->B is longer (2 hops) but faster (10+10=20ms)
     node_a.add_neighbor(node_c, 10)
     node_c.add_neighbor(node_b, 10)
 

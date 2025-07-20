@@ -2,9 +2,11 @@
 
 import logging
 import argparse
+import yaml
 from src.models import Network, Message
 from src.reporter import Reporter
 from src.visualizer import Visualizer
+from src.validator import validate_config
 
 def print_help():
     """Prints the list of available commands for interactive mode."""
@@ -21,8 +23,8 @@ def print_help():
     print("  exit / quit                       - Exits the simulator.")
     print("--------------------------------\n")
 
-# ... (print_status and run_automated_test are unchanged) ...
 def print_status(network):
+    """Prints the status of every node in the network with color coding."""
     print("\n--- Network Status ---")
     if not network.nodes: print("Network is empty."); return
     for node in sorted(network.nodes.values(), key=lambda n: n.name):
@@ -36,6 +38,7 @@ def print_status(network):
     print("----------------------\n")
 
 def run_automated_test(network, reporter, visualizer):
+    """Runs a predefined sequence of events to showcase the simulator's features."""
     print("--- Running Automated Test Scenario ---")
     command_center = network.get_node_by_name("Command_Center")
     backup_center = network.get_node_by_name("Backup_Center")
@@ -54,7 +57,6 @@ def run_automated_test(network, reporter, visualizer):
     network.route_message(msg)
     print("\n--- Automated Test Scenario Complete ---")
 
-
 def main():
     parser = argparse.ArgumentParser(description="Project Aegis Network Simulator")
     parser.add_argument('--mode', type=str, choices=['interactive', 'auto'], default='interactive', help="Run mode.")
@@ -63,8 +65,23 @@ def main():
     logging.basicConfig(level=log_level, format='%(asctime)s - %(levelname)s - %(message)s')
     
     print("--- Starting Project Aegis Network Simulator ---")
+
+    try:
+        with open('network_config.yml', 'r') as f:
+            config_data = yaml.safe_load(f)
+    except FileNotFoundError:
+        print("FATAL ERROR: network_config.yml not found. Please create one.")
+        return
+    except yaml.YAMLError as e:
+        print(f"FATAL ERROR: Could not parse network_config.yml: {e}")
+        return
+
+    if not validate_config(config_data):
+        print("Exiting due to invalid configuration.")
+        return
+
     reporter, visualizer = Reporter(), Visualizer()
-    network = Network.create_from_config('network_config.yml', reporter=reporter)
+    network = Network.create_from_config(config_data, reporter=reporter)
     print("--- Network Initialization Complete ---\n")
 
     if args.mode == 'auto':
@@ -77,12 +94,10 @@ def main():
                 if not raw_input: continue
                 parts = raw_input.split()
                 command, cli_args = parts[0].lower(), parts[1:]
-
                 if command in ["exit", "quit"]:
                     save_choice = input("Save report? (y/n): ").lower().strip()
                     if save_choice == 'y': reporter.write_report()
                     print("Shutting down. Goodbye."); break
-                
                 elif command == "help": print_help()
                 elif command == "status": print_status(network)
                 elif command == "visualize":
@@ -106,21 +121,13 @@ def main():
                     path, latency = network.find_shortest_path(from_node.id, to_node.id)
                     if path: print(f"Fastest Path: {' -> '.join([n.name for n in path])} (Latency: {latency}ms)")
                     else: print(f"No path found between '{from_node.name}' and '{to_node.name}'.")
-                
-                # --- NEW COMMAND for AEGIS-11 ---
                 elif command == "set_latency":
-                    if len(cli_args) != 3:
-                        print("Usage: set_latency <from_node> <to_node> <new_latency_ms>")
-                        continue
+                    if len(cli_args) != 3: print("Usage: set_latency <from> <to> <ms>"); continue
                     try:
                         latency = int(cli_args[2])
-                        if network.set_link_latency(cli_args[0], cli_args[1], latency):
-                            print("Link latency updated successfully.")
-                        else:
-                            print("Failed to update link latency. Check node names and if a link exists.")
-                    except ValueError:
-                        print("Error: Latency must be an integer.")
-
+                        if not network.set_link_latency(cli_args[0], cli_args[1], latency):
+                            print("Failed to update link latency.")
+                    except ValueError: print("Error: Latency must be an integer.")
                 elif command == "route":
                     if len(cli_args) < 3: print("Usage: route <from> <to> <payload>"); continue
                     from_node, to_node = network.get_node_by_name(cli_args[0]), network.get_node_by_name(cli_args[1])
@@ -133,7 +140,6 @@ def main():
                     logging.getLogger().setLevel(logging.WARNING)
                 else:
                     print(f"Unknown command: '{command}'. Type 'help' for a list of commands.")
-
             except KeyboardInterrupt:
                 print("\nShutting down. Goodbye."); break
             except Exception as e:

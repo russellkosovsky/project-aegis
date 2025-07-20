@@ -10,7 +10,8 @@ nodes:
 links:
   # [node1, node2, latency_in_ms]
   # Fast, direct links
-  - [Command_Center, Mobile_Unit_7, 20]
+  #- [Command_Center, Mobile_Unit_7, 20]
+  - [Command_Center, Mobile_Unit_7, "fast"]
   - [Satellite_Relay, Backup_Center, 40]
   
   # Slower, terrestrial links

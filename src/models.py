@@ -4,11 +4,10 @@ import uuid
 import logging
 import yaml
 import heapq
-from src.reporter import Reporter # <-- New import
+from src.reporter import Reporter
 
 # ... (Message and Node classes are unchanged) ...
 class Message:
-    """Represents a data packet moving through the network."""
     def __init__(self, source_id, destination_id, payload):
         self.id = str(uuid.uuid4())
         self.source_id = source_id
@@ -16,13 +15,11 @@ class Message:
         self.payload = payload
         logging.info(f"Message {self.id} created from {source_id} to {destination_id}")
 
-
 class Node:
-    """Represents a single communications node in the network."""
     def __init__(self, name):
         self.id = str(uuid.uuid4())
         self.name = name
-        self.neighbors = {} # {neighbor_node: latency}
+        self.neighbors = {}
         self.is_active = True
         logging.info(f"Node '{self.name}' created with ID {self.id}")
 
@@ -35,19 +32,16 @@ class Node:
         logging.info(f"Node '{self.name}' has been brought ONLINE.")
 
     def add_neighbor(self, neighbor_node, latency):
-        """Establishes a bilateral connection to another node with a given latency."""
         if neighbor_node not in self.neighbors:
             self.neighbors[neighbor_node] = latency
-            neighbor_node.neighbors[self] = latency # Make the connection two-way
+            neighbor_node.neighbors[self] = latency
             logging.info(f"Node '{self.name}' connected to '{neighbor_node.name}' with latency {latency}ms")
 
     def receive_message(self, message):
         if message.destination_id == self.id:
             logging.info(f"Node '{self.name}' ({self.id}) received final message: '{message.payload}'")
             return True
-        else:
-            logging.warning(f"Node '{self.name}' received message intended for {message.destination_id}. Discarding.")
-            return False
+        return False
 
 class Network:
     def __init__(self, reporter=None):
@@ -62,8 +56,7 @@ class Network:
     def add_node(self, node):
         if node.id not in self.nodes:
             self.nodes[node.id] = node
-            logging.info(f"Node '{node.name}' added to the network.")
-    
+
     def get_node_by_name(self, name):
         for node in self.nodes.values():
             if node.name == name:
@@ -72,40 +65,38 @@ class Network:
 
     def get_node(self, node_id):
         return self.nodes.get(node_id)
-    
-    # --- NEW METHOD for AEGIS-11 ---
+
+    # --- METHOD RE-ADDED ---
+    def send_direct_message(self, message):
+        source_node = self.get_node(message.source_id)
+        destination_node = self.get_node(message.destination_id)
+        if not source_node or not destination_node:
+            return False
+        if destination_node in source_node.neighbors:
+            return destination_node.receive_message(message)
+        return False
+
     def set_link_latency(self, node1_name, node2_name, new_latency):
-        """Updates the latency of an existing link between two nodes."""
         node1 = self.get_node_by_name(node1_name)
         node2 = self.get_node_by_name(node2_name)
-
-        if not node1 or not node2:
-            logging.error(f"Set latency failed: Node '{node1_name or node2_name}' not found.")
-            return False
-
-        # Check if they are actually neighbors before trying to update
+        if not node1 or not node2: return False
         if node2 in node1.neighbors:
             node1.neighbors[node2] = new_latency
-            node2.neighbors[node1] = new_latency # Update the bilateral link
-            logging.info(f"Updated latency between '{node1.name}' and '{node2.name}' to {new_latency}ms.")
+            node2.neighbors[node1] = new_latency
             return True
-        else:
-            logging.warning(f"Set latency failed: No direct link exists between '{node1.name}' and '{node2.name}'.")
-            return False
+        return False
 
     @classmethod
-    def create_from_config(cls, config_path, reporter=None):
-        # ... (This method is unchanged) ...
+    def create_from_config(cls, config_data, reporter=None):
         network = cls(reporter=reporter)
         name_to_node_map = {}
-        with open(config_path, 'r') as f: config = yaml.safe_load(f)
-        for node_data in config.get('nodes', []):
+        for node_data in config_data.get('nodes', []):
             node_name = node_data['name']
             if node_name not in name_to_node_map:
                 node = Node(name=node_name)
                 network.add_node(node)
                 name_to_node_map[node_name] = node
-        for link_data in config.get('links', []):
+        for link_data in config_data.get('links', []):
             node1_name, node2_name, latency = link_data
             node1, node2 = name_to_node_map.get(node1_name), name_to_node_map.get(node2_name)
             if node1 and node2:
@@ -113,12 +104,9 @@ class Network:
         return network
 
     def find_shortest_path(self, start_node_id, end_node_id):
-        # ... (This method is unchanged) ...
         start_node, end_node = self.get_node(start_node_id), self.get_node(end_node_id)
-        if not all([start_node, end_node, start_node.is_active, end_node.is_active]):
-            return None, float('inf')
-        distances = {node_id: float('inf') for node_id in self.nodes}
-        distances[start_node_id] = 0
+        if not all([start_node, end_node, start_node.is_active, end_node.is_active]): return None, float('inf')
+        distances = {node_id: float('inf') for node_id in self.nodes}; distances[start_node_id] = 0
         previous_nodes = {node_id: None for node_id in self.nodes}
         pq = [(0, start_node_id)]
         while pq:
@@ -139,12 +127,10 @@ class Network:
         while current_node is not None:
             path.insert(0, current_node)
             current_node = previous_nodes.get(current_node.id)
-        if path and path[0] == start_node:
-            return path, distances[end_node_id]
+        if path and path[0] == start_node: return path, distances[end_node_id]
         return None, float('inf')
 
     def route_message(self, message):
-        # ... (This method is unchanged) ...
         source_node, dest_node = self.get_node(message.source_id), self.get_node(message.destination_id)
         if not source_node or not dest_node: return False
         path, total_latency = self.find_shortest_path(source_node.id, dest_node.id)
