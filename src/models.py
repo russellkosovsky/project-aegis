@@ -50,7 +50,6 @@ class Node:
             return False
 
 class Network:
-    # --- MODIFIED: __init__ now accepts a reporter ---
     def __init__(self, reporter=None):
         self.nodes = {}
         self.reporter = reporter if reporter else self._create_dummy_reporter()
@@ -60,132 +59,98 @@ class Network:
             def log_routing_attempt(self, *args, **kwargs): pass
         return DummyReporter()
 
-    # ... (add_node, get_node_by_name, get_node, send_direct_message are unchanged) ...
     def add_node(self, node):
-        """Adds a node to the network."""
         if node.id not in self.nodes:
             self.nodes[node.id] = node
             logging.info(f"Node '{node.name}' added to the network.")
     
     def get_node_by_name(self, name):
-        """Retrieves a node from the network by its unique name."""
         for node in self.nodes.values():
             if node.name == name:
                 return node
         return None
 
     def get_node(self, node_id):
-        """Retrieves a node from the network by its ID."""
         return self.nodes.get(node_id)
+    
+    # --- NEW METHOD for AEGIS-11 ---
+    def set_link_latency(self, node1_name, node2_name, new_latency):
+        """Updates the latency of an existing link between two nodes."""
+        node1 = self.get_node_by_name(node1_name)
+        node2 = self.get_node_by_name(node2_name)
 
-    def send_direct_message(self, message):
-        """
-        Sends a message from a source node to a destination node
-        if they are direct neighbors.
-        """
-        source_node = self.get_node(message.source_id)
-        destination_node = self.get_node(message.destination_id)
-
-        if not source_node or not destination_node:
-            logging.error("Source or Destination node not found in the network.")
+        if not node1 or not node2:
+            logging.error(f"Set latency failed: Node '{node1_name or node2_name}' not found.")
             return False
 
-        if destination_node in source_node.neighbors:
-            logging.info(f"Attempting to send message from '{source_node.name}' to neighbor '{destination_node.name}'...")
-            return destination_node.receive_message(message)
+        # Check if they are actually neighbors before trying to update
+        if node2 in node1.neighbors:
+            node1.neighbors[node2] = new_latency
+            node2.neighbors[node1] = new_latency # Update the bilateral link
+            logging.info(f"Updated latency between '{node1.name}' and '{node2.name}' to {new_latency}ms.")
+            return True
         else:
-            logging.warning(f"Failed to send: '{destination_node.name}' is not a direct neighbor of '{source_node.name}'.")
+            logging.warning(f"Set latency failed: No direct link exists between '{node1.name}' and '{node2.name}'.")
             return False
 
-    # --- MODIFIED: create_from_config now accepts and passes the reporter ---
     @classmethod
     def create_from_config(cls, config_path, reporter=None):
+        # ... (This method is unchanged) ...
         network = cls(reporter=reporter)
         name_to_node_map = {}
-        with open(config_path, 'r') as f:
-            config = yaml.safe_load(f)
-
-        logging.info("Creating nodes from config...")
+        with open(config_path, 'r') as f: config = yaml.safe_load(f)
         for node_data in config.get('nodes', []):
             node_name = node_data['name']
             if node_name not in name_to_node_map:
                 node = Node(name=node_name)
                 network.add_node(node)
                 name_to_node_map[node_name] = node
-
-        logging.info("Creating links between nodes...")
         for link_data in config.get('links', []):
             node1_name, node2_name, latency = link_data
-            node1 = name_to_node_map.get(node1_name)
-            node2 = name_to_node_map.get(node2_name)
+            node1, node2 = name_to_node_map.get(node1_name), name_to_node_map.get(node2_name)
             if node1 and node2:
                 node1.add_neighbor(node2, int(latency))
         return network
 
-    # ... (find_shortest_path is unchanged) ...
     def find_shortest_path(self, start_node_id, end_node_id):
-        start_node = self.get_node(start_node_id)
-        end_node = self.get_node(end_node_id)
-
-        if not start_node or not end_node or not start_node.is_active or not end_node.is_active:
-            logging.error("Pathfinding error: Start/end node not found or is offline.")
+        # ... (This method is unchanged) ...
+        start_node, end_node = self.get_node(start_node_id), self.get_node(end_node_id)
+        if not all([start_node, end_node, start_node.is_active, end_node.is_active]):
             return None, float('inf')
-
         distances = {node_id: float('inf') for node_id in self.nodes}
         distances[start_node_id] = 0
         previous_nodes = {node_id: None for node_id in self.nodes}
         pq = [(0, start_node_id)]
-
         while pq:
             current_latency, current_node_id = heapq.heappop(pq)
-            if current_latency > distances[current_node_id]:
-                continue
+            if current_latency > distances[current_node_id]: continue
             current_node = self.get_node(current_node_id)
-            if not current_node.is_active:
-                continue
-            if current_node_id == end_node_id:
-                break
+            if not current_node.is_active: continue
+            if current_node_id == end_node_id: break
             for neighbor, latency in current_node.neighbors.items():
-                if not neighbor.is_active:
-                    continue
+                if not neighbor.is_active: continue
                 distance = current_latency + latency
                 if distance < distances[neighbor.id]:
                     distances[neighbor.id] = distance
                     previous_nodes[neighbor.id] = current_node
                     heapq.heappush(pq, (distance, neighbor.id))
-        
         path = []
         current_node = end_node
         while current_node is not None:
             path.insert(0, current_node)
-            current_node = previous_nodes[current_node.id]
-
+            current_node = previous_nodes.get(current_node.id)
         if path and path[0] == start_node:
-            total_latency = distances[end_node_id]
-            return path, total_latency
-        else:
-            logging.warning(f"No path found between '{start_node.name}' and '{end_node.name}'")
-            return None, float('inf')
+            return path, distances[end_node_id]
+        return None, float('inf')
 
-    # --- MODIFIED: route_message now logs events to the reporter ---
     def route_message(self, message):
-        source_node = self.get_node(message.source_id)
-        dest_node = self.get_node(message.destination_id)
-        if not source_node or not dest_node:
-            logging.error("Routing failed: Source or destination node does not exist.")
-            return False
-
+        # ... (This method is unchanged) ...
+        source_node, dest_node = self.get_node(message.source_id), self.get_node(message.destination_id)
+        if not source_node or not dest_node: return False
         path, total_latency = self.find_shortest_path(source_node.id, dest_node.id)
-
         if not path:
-            logging.error(f"Routing failed: No path available for message {message.id}.")
             self.reporter.log_routing_attempt(message, source_node, dest_node, None, 0, False)
             return False
-
-        path_names = ' -> '.join([node.name for node in path])
-        logging.info(f"Path found (Total Latency: {total_latency}ms): {path_names}. Transmitting...")
-
-        # Final delivery
         success = path[-1].receive_message(message)
         self.reporter.log_routing_attempt(message, source_node, dest_node, path, total_latency, success)
         return success

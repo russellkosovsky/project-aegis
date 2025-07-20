@@ -14,7 +14,7 @@ links:
   - [Satellite_Relay, Backup_Center, 40]
   
   # Slower, terrestrial links
-  - [Command_Center, Ground_Station Alpha, 50]
+  - [Command_Center, Ground_Station_Alpha, 50]
   - [Ground_Station_Alpha, Backup_Center, 60]
 
   # High-latency satellite link
