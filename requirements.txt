@@ -18,7 +18,6 @@ pbr==6.1.1
 pillow==11.3.0
 platformdirs==4.3.8
 pluggy==1.6.0
--e git+https://gitlab.com/russellkosovsky-group/russellkosovsky-project.git@5897bf4c9007363813189fbec929f49917c536a2#egg=project_aegis
 Pygments==2.19.2
 pyparsing==3.2.3
 pytest==8.4.1
