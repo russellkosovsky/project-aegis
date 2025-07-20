@@ -1,0 +1,3 @@
+timestamp,message_id,source_node,intended_destination,payload,status,path_taken,total_latency_ms
+2025-07-20 00:19:28,60acc75f-952c-45cb-87c2-0c743149315c,Command_Center,Mobile_Unit_7,This is a successful test,SUCCESS,Command_Center -> Mobile_Unit_7,20
+2025-07-20 00:20:04,ca27a152-9b6d-42f7-98d9-985bd5c0488f,Command_Center,Backup_Center,This will fail,FAILED,No path found,N/A
