@@ -1,3 +1,11 @@
+# Python
 venv/
 __pycache__/
 *.pyc
+
+# Generated output files
+output/
+
+# IDE files
+.vscode/
+.idea/

@@ -2,18 +2,25 @@
 
 import networkx as nx
 import matplotlib.pyplot as plt
+import os
 
 class Visualizer:
     """Handles the creation of network graph visualizations."""
 
     def generate_graph_image(self, network, filename="network_topology.png"):
         """
-        Creates a visual graph of the network and saves it as a PNG image.
+        Creates a visual graph of the network and saves it to the output/png/ directory.
         
         - Nodes are colored based on their active status (Green for ONLINE, Red for OFFLINE).
         - Node labels are displayed above the nodes for clarity.
         - Edges (links) are labeled with their latency.
         """
+        # --- NEW SECTION: Ensure output directory exists ---
+        output_dir = os.path.join("output", "png")
+        os.makedirs(output_dir, exist_ok=True)
+        filepath = os.path.join(output_dir, filename)
+        # --- END NEW SECTION ---
+
         if not network.nodes:
             print("Cannot generate graph: Network has no nodes.")
             return
@@ -49,11 +56,9 @@ class Visualizer:
         nx.draw_networkx_edges(G, pos, width=1.5, alpha=0.7, edge_color='gray')
         nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels, font_color='black', font_size=9)
 
-        # --- MODIFIED SECTION ---
         # Draw node labels separately with a vertical offset to place them above the nodes
         label_pos = {k: (v[0], v[1] + 0.08) for k, v in pos.items()}
         nx.draw_networkx_labels(G, label_pos, labels=node_labels, font_size=12, font_color='black')
-        # --- END MODIFIED SECTION ---
 
         # Customize and save the plot
         plt.title("Project Aegis - Network Topology", size=20)
@@ -61,8 +66,9 @@ class Visualizer:
         plt.axis('off')
         
         try:
-            plt.savefig(filename, format="PNG", bbox_inches="tight")
-            print(f"Successfully saved network graph to '{filename}'")
+            # --- MODIFIED: Use the full filepath ---
+            plt.savefig(filepath, format="PNG", bbox_inches="tight")
+            print(f"Successfully saved network graph to '{filepath}'")
         except IOError as e:
             print(f"Error saving graph image: {e}")
         finally:

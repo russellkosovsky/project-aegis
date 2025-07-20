@@ -1,4 +1,0 @@
-timestamp,message_id,source_node,intended_destination,payload,status,path_taken,total_latency_ms
-2025-07-20 00:27:25,afa11b16-1c7b-4be0-aa5d-527763edd64f,Command_Center,Backup_Center,Status report: All systems nominal.,SUCCESS,Command_Center -> Satellite_Relay -> Backup_Center,190
-2025-07-20 00:27:25,f7c31266-92c4-4d60-bac7-3e52a3999e56,Command_Center,Backup_Center,Status report: Rerouting due to node failure.,SUCCESS,Command_Center -> Satellite_Relay -> Backup_Center,190
-2025-07-20 00:27:25,3de95a2e-37e9-48c1-aece-f10e9cc49c77,Mobile_Unit_7,Backup_Center,This message should fail.,SUCCESS,Mobile_Unit_7 -> Command_Center -> Satellite_Relay -> Backup_Center,210

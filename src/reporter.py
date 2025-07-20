@@ -2,6 +2,7 @@
 
 import csv
 import datetime
+import os
 
 class Reporter:
     """Logs simulation events and generates a CSV report."""
@@ -28,20 +29,26 @@ class Reporter:
         self.log_entries.append(entry)
 
     def write_report(self, filename="simulation_report.csv"):
-        """Writes all logged entries to a specified CSV file."""
+        """Writes all logged entries to a specified CSV file in the output/csv/ directory."""
+        # --- NEW SECTION: Ensure output directory exists ---
+        output_dir = os.path.join("output", "csv")
+        os.makedirs(output_dir, exist_ok=True)
+        filepath = os.path.join(output_dir, filename)
+        # --- END NEW SECTION ---
+
         if not self.log_entries:
             print("No events to report.")
             return False
             
-        # Use the keys from the first entry as headers
         headers = self.log_entries[0].keys()
         
         try:
-            with open(filename, 'w', newline='', encoding='utf-8') as csvfile:
+            # --- MODIFIED: Use the full filepath ---
+            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=headers)
                 writer.writeheader()
                 writer.writerows(self.log_entries)
-            print(f"Successfully wrote report to {filename}")
+            print(f"Successfully wrote report to '{filepath}'")
             return True
         except IOError as e:
             print(f"Error writing report to file: {e}")
