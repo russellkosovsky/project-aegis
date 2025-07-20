@@ -103,7 +103,10 @@ project-aegis/
 │   ├── validator.py        \# Configuration schema and validation  
 │   └── visualizer.py       \# Graph visualization logic  
 │  
-├── tests/                  \# Test suite for the project  
+├── tests/                  \# Test suite for the project
+│   ├── test_main.py
+│   ├── test_models.py  
+│   └── test_reporter.py
 │  
 ├── .gitlab-ci.yml          \# GitLab CI/CD pipeline configuration  
 ├── .gitignore              \# Specifies intentionally untracked files  
