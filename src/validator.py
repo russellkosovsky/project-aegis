@@ -14,8 +14,8 @@ CONFIG_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {"name": {"type": "string"}},
-                "required": ["name"]
-            }
+                "required": ["name"],
+            },
         },
         "links": {
             "type": "array",
@@ -24,15 +24,16 @@ CONFIG_SCHEMA = {
                 "prefixItems": [
                     {"type": "string"},  # From Node
                     {"type": "string"},  # To Node
-                    {"type": "number"}   # Latency
+                    {"type": "number"},  # Latency
                 ],
                 "minItems": 3,
-                "maxItems": 3
-            }
-        }
+                "maxItems": 3,
+            },
+        },
     },
-    "required": ["nodes", "links"]
+    "required": ["nodes", "links"],
 }
+
 
 def validate_config(config_data):
     """Validates a loaded YAML configuration against the defined schema.

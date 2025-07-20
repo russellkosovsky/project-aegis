@@ -6,6 +6,7 @@ import yaml
 import heapq
 from src.reporter import Reporter
 
+
 class Message:
     """Represents a data packet or message moving through the network.
 
@@ -15,6 +16,7 @@ class Message:
         destination_id (str): The ID of the intended recipient node.
         payload (str): The content of the message.
     """
+
     def __init__(self, source_id, destination_id, payload):
         """Initializes a new Message instance."""
         self.id = str(uuid.uuid4())
@@ -35,6 +37,7 @@ class Node:
         is_active (bool): The operational status of the node (True for online,
                           False for offline).
     """
+
     def __init__(self, name):
         """Initializes a new Node instance."""
         self.id = str(uuid.uuid4())
@@ -63,7 +66,9 @@ class Node:
         if neighbor_node not in self.neighbors:
             self.neighbors[neighbor_node] = latency
             neighbor_node.neighbors[self] = latency
-            logging.info(f"Node '{self.name}' connected to '{neighbor_node.name}' with latency {latency}ms")
+            logging.info(
+                f"Node '{self.name}' connected to '{neighbor_node.name}' with latency {latency}ms"
+            )
 
     def receive_message(self, message):
         """Processes a message that has arrived at this node.
@@ -77,9 +82,12 @@ class Node:
             bool: True if this node is the destination, False otherwise.
         """
         if self.id == message.destination_id:
-            logging.info(f"Node '{self.name}' ({self.id}) received final message: '{message.payload}'")
+            logging.info(
+                f"Node '{self.name}' ({self.id}) received final message: '{message.payload}'"
+            )
             return True
         return False
+
 
 class Network:
     """Manages the entire collection of nodes and their interactions.
@@ -91,6 +99,7 @@ class Network:
         nodes (dict): A dictionary mapping node IDs to their Node objects.
         reporter (Reporter): An instance of the Reporter class for logging events.
     """
+
     def __init__(self, reporter=None):
         """Initializes a new Network instance."""
         self.nodes = {}
@@ -98,8 +107,11 @@ class Network:
 
     def _create_dummy_reporter(self):
         """Creates a non-functional reporter for when none is provided."""
+
         class DummyReporter:
-            def log_routing_attempt(self, *args, **kwargs): pass
+            def log_routing_attempt(self, *args, **kwargs):
+                pass
+
         return DummyReporter()
 
     def add_node(self, node):
@@ -167,14 +179,20 @@ class Network:
         node1 = self.get_node_by_name(node1_name)
         node2 = self.get_node_by_name(node2_name)
         if not node1 or not node2:
-            logging.error(f"Set latency failed: Node '{node1_name or node2_name}' not found.")
+            logging.error(
+                f"Set latency failed: Node '{node1_name or node2_name}' not found."
+            )
             return False
         if node2 in node1.neighbors:
             node1.neighbors[node2] = new_latency
             node2.neighbors[node1] = new_latency
-            logging.info(f"Updated latency between '{node1.name}' and '{node2.name}' to {new_latency}ms.")
+            logging.info(
+                f"Updated latency between '{node1.name}' and '{node2.name}' to {new_latency}ms."
+            )
             return True
-        logging.warning(f"Set latency failed: No direct link exists between '{node1.name}' and '{node2.name}'.")
+        logging.warning(
+            f"Set latency failed: No direct link exists between '{node1.name}' and '{node2.name}'."
+        )
         return False
 
     @classmethod
@@ -190,15 +208,17 @@ class Network:
         """
         network = cls(reporter=reporter)
         name_to_node_map = {}
-        for node_data in config_data.get('nodes', []):
-            node_name = node_data['name']
+        for node_data in config_data.get("nodes", []):
+            node_name = node_data["name"]
             if node_name not in name_to_node_map:
                 node = Node(name=node_name)
                 network.add_node(node)
                 name_to_node_map[node_name] = node
-        for link_data in config_data.get('links', []):
+        for link_data in config_data.get("links", []):
             node1_name, node2_name, latency = link_data
-            node1, node2 = name_to_node_map.get(node1_name), name_to_node_map.get(node2_name)
+            node1, node2 = name_to_node_map.get(node1_name), name_to_node_map.get(
+                node2_name
+            )
             if node1 and node2:
                 node1.add_neighbor(node2, int(latency))
         return network
@@ -220,37 +240,41 @@ class Network:
         """
         start_node, end_node = self.get_node(start_node_id), self.get_node(end_node_id)
         if not all([start_node, end_node, start_node.is_active, end_node.is_active]):
-            return None, float('inf')
-        
-        distances = {node_id: float('inf') for node_id in self.nodes}
+            return None, float("inf")
+
+        distances = {node_id: float("inf") for node_id in self.nodes}
         distances[start_node_id] = 0
         previous_nodes = {node_id: None for node_id in self.nodes}
         pq = [(0, start_node_id)]
 
         while pq:
             current_latency, current_node_id = heapq.heappop(pq)
-            if current_latency > distances[current_node_id]: continue
+            if current_latency > distances[current_node_id]:
+                continue
             current_node = self.get_node(current_node_id)
-            if not current_node.is_active: continue
-            if current_node_id == end_node_id: break
+            if not current_node.is_active:
+                continue
+            if current_node_id == end_node_id:
+                break
             for neighbor, latency in current_node.neighbors.items():
-                if not neighbor.is_active: continue
+                if not neighbor.is_active:
+                    continue
                 distance = current_latency + latency
                 if distance < distances[neighbor.id]:
                     distances[neighbor.id] = distance
                     previous_nodes[neighbor.id] = current_node
                     heapq.heappush(pq, (distance, neighbor.id))
-        
+
         path = []
         current_node = end_node
         while current_node is not None:
             path.insert(0, current_node)
             current_node = previous_nodes.get(current_node.id)
-        
+
         if path and path[0] == start_node:
             return path, distances[end_node_id]
-        
-        return None, float('inf')
+
+        return None, float("inf")
 
     def route_message(self, message):
         """Routes a message from source to destination using the fastest path.
@@ -264,15 +288,22 @@ class Network:
         Returns:
             bool: True if the message was successfully delivered, False otherwise.
         """
-        source_node, dest_node = self.get_node(message.source_id), self.get_node(message.destination_id)
-        if not source_node or not dest_node: return False
-        
-        path, total_latency = self.find_shortest_path(source_node.id, dest_node.id)
-        
-        if not path:
-            self.reporter.log_routing_attempt(message, source_node, dest_node, None, 0, False)
+        source_node, dest_node = self.get_node(message.source_id), self.get_node(
+            message.destination_id
+        )
+        if not source_node or not dest_node:
             return False
-            
+
+        path, total_latency = self.find_shortest_path(source_node.id, dest_node.id)
+
+        if not path:
+            self.reporter.log_routing_attempt(
+                message, source_node, dest_node, None, 0, False
+            )
+            return False
+
         success = path[-1].receive_message(message)
-        self.reporter.log_routing_attempt(message, source_node, dest_node, path, total_latency, success)
+        self.reporter.log_routing_attempt(
+            message, source_node, dest_node, path, total_latency, success
+        )
         return success

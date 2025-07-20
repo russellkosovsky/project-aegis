@@ -4,6 +4,7 @@ import csv
 import datetime
 import os
 
+
 class Reporter:
     """Logs simulation events and generates a CSV report.
 
@@ -20,7 +21,9 @@ class Reporter:
         self.log_entries = []
         print("Reporter initialized.")
 
-    def log_routing_attempt(self, message, source_node, dest_node, path, latency, success):
+    def log_routing_attempt(
+        self, message, source_node, dest_node, path, latency, success
+    ):
         """Logs the result of a single message routing attempt.
 
         This method is called by the Network class after each routing attempt.
@@ -36,7 +39,7 @@ class Reporter:
                             False otherwise.
         """
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        
+
         entry = {
             "timestamp": timestamp,
             "message_id": message.id,
@@ -44,8 +47,10 @@ class Reporter:
             "intended_destination": dest_node.name,
             "payload": message.payload,
             "status": "SUCCESS" if success else "FAILED",
-            "path_taken": ' -> '.join([n.name for n in path]) if path else "No path found",
-            "total_latency_ms": latency if success else "N/A"
+            "path_taken": (
+                " -> ".join([n.name for n in path]) if path else "No path found"
+            ),
+            "total_latency_ms": latency if success else "N/A",
         }
         self.log_entries.append(entry)
 
@@ -68,11 +73,11 @@ class Reporter:
         if not self.log_entries:
             print("No events to report.")
             return False
-            
+
         headers = self.log_entries[0].keys()
-        
+
         try:
-            with open(filepath, 'w', newline='', encoding='utf-8') as csvfile:
+            with open(filepath, "w", newline="", encoding="utf-8") as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=headers)
                 writer.writeheader()
                 writer.writerows(self.log_entries)
